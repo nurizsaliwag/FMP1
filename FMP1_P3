@@ -1,0 +1,224 @@
+
+public class FMP1 {
+    private static final int CAPACITY = 4;
+    private static final Product[] products = new Product[CAPACITY];
+    private static final Scanner scanner = new Scanner(System.in);
+ 
+    public static void main(String[] args) {
+        boolean running = true;
+ 
+        while (running) {
+            displayMenu();
+            int choice = readInt("Choose an option: ");
+ 
+            try {
+                switch (choice) {
+                    case 1:
+                        addProduct();
+                        break;
+                    case 2:
+                        restockProduct();
+                        break;
+                    case 3:
+                        sellProduct();
+                        break;
+                    case 4:
+                        displayProducts();
+                        break;
+                    case 0:
+                        running = false;
+                        System.out.println("Exiting inventory system.");
+                        break;
+                    default:
+                        System.out.println("Invalid option. Choose 0 to 4.");
+                }
+            } catch (InventoryException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+ 
+        scanner.close();
+    }
+ 
+    private static void displayMenu() {
+        System.out.println("\n=== PRODUCT INVENTORY SYSTEM ===");
+        System.out.println("1. Add product");
+        System.out.println("2. Restock product");
+        System.out.println("3. Sell product");
+        System.out.println("4. List products");
+        System.out.println("0. Exit");
+    }
+ 
+    private static void addProduct() throws InventoryException {
+        int id = readInt("Enter product ID: ");
+        String name = readNonBlank("Enter product name: ");
+        int quantity = readInt("Enter starting quantity: ");
+ 
+        if (quantity < 0) {
+            throw new InventoryException("Quantity cannot be negative.");
+        }
+ 
+        if (findById(id) != null) {
+            throw new InventoryException("Duplicate product ID.");
+        }
+ 
+        if (findByName(name) != null) {
+            throw new InventoryException("Product name must be unique.");
+        }
+ 
+        int emptyIndex = findEmptyIndex();
+        if (emptyIndex == -1) {
+            throw new InventoryException("Inventory is full.");
+        }
+ 
+        products[emptyIndex] = new Product(id, name, quantity);
+        System.out.println("Added: " + products[emptyIndex]);
+    }
+ 
+    private static void restockProduct() throws InventoryException {
+        int id = readInt("Enter product ID: ");
+        int amount = readInt("Enter restock amount: ");
+        Product product = findById(id);
+ 
+        if (product == null) {
+            throw new InventoryException("Product not found.");
+        }
+ 
+        product.restock(amount);
+        System.out.println("Quantity " + product.getName() + ": "
+                + product.getQuantity());
+    }
+ 
+    private static void sellProduct() throws InventoryException {
+        int id = readInt("Enter product ID: ");
+        int amount = readInt("Enter quantity to sell: ");
+        Product product = findById(id);
+ 
+        if (product == null) {
+            throw new InventoryException("Product not found.");
+        }
+ 
+        product.sell(amount);
+        System.out.println("Quantity " + product.getName() + ": "
+                + product.getQuantity());
+    }
+ 
+    public static Product findById(int id) {
+        for (Product product : products) {
+            if (product != null && product.getId() == id) {
+                return product;
+            }
+        }
+        return null;
+    }
+ 
+    private static Product findByName(String name) {
+        for (Product product : products) {
+            if (product != null
+                    && product.getName().equalsIgnoreCase(name.trim())) {
+                return product;
+            }
+        }
+        return null;
+    }
+ 
+    private static int findEmptyIndex() {
+        for (int i = 0; i < products.length; i++) {
+            if (products[i] == null) {
+                return i;
+            }
+        }
+        return -1;
+    }
+ 
+    private static void displayProducts() {
+        boolean hasProducts = false;
+        System.out.println("\n=== PRODUCTS ===");
+ 
+        for (Product product : products) {
+            if (product != null) {
+                System.out.println(product);
+                hasProducts = true;
+            }
+        }
+ 
+        if (!hasProducts) {
+            System.out.println("No products in inventory.");
+        }
+    }
+ 
+    private static int readInt(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            try {
+                return Integer.parseInt(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter an integer.");
+            }
+        }
+    }
+ 
+    private static String readNonBlank(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
+            if (!input.isEmpty()) {
+                return input;
+            }
+            System.out.println("Product name cannot be blank.");
+        }
+    }
+}
+ 
+class Product {
+    private final int id;
+    private final String name;
+    private int quantity;
+ 
+    public Product(int id, String name, int quantity) {
+        this.id = id;
+        this.name = name;
+        this.quantity = quantity;
+    }
+ 
+    public int getId() {
+        return id;
+    }
+ 
+    public String getName() {
+        return name;
+    }
+ 
+    public int getQuantity() {
+        return quantity;
+    }
+ 
+    public void restock(int amount) throws InventoryException {
+        if (amount <= 0) {
+            throw new InventoryException("Amount must be positive.");
+        }
+        quantity += amount;
+    }
+ 
+    public void sell(int amount) throws InventoryException {
+        if (amount <= 0) {
+            throw new InventoryException("Amount must be positive.");
+        }
+        if (amount > quantity) {
+            throw new InventoryException("Insufficient stock.");
+        }
+        quantity -= amount;
+    }
+ 
+    @Override
+    public String toString() {
+        return "ID: " + id + " | Name: " + name
+                + " | Quantity: " + quantity;
+    }
+}
+ 
+class InventoryException extends Exception {
+    public InventoryException(String message) {
+        super(message);
+    }
+}
